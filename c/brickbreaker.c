@@ -110,6 +110,9 @@ int main(){
 
 
             while(1){
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_RenderClear(renderer);
+
                 int ball_top = ball.pos.y - BALL_RADIUS;
                 int ball_bottom = ball.pos.y + BALL_RADIUS;
                 int ball_left = ball.pos.x - BALL_RADIUS;
@@ -141,9 +144,7 @@ int main(){
                     return 0;
                 }
 
-                if (ball_right >= SCREEN_WIDTH || ball_left <= 0){
-                    ball.vel.x *= -1; 
-                } 
+                if (ball_right >= SCREEN_WIDTH || ball_left <= 0){ ball.vel.x *= -1; } 
 
                 //paddle collisions
                 if (abs(ball_bottom - (SCREEN_HEIGHT - PADDLE_Y_OFFSET - PADDLE_THICKNESS)) <= COLLISION_TOLERANCE
@@ -183,15 +184,14 @@ int main(){
                     if (((abs(ball_top - brick_bottom) <= COLLISION_TOLERANCE)
                                 || abs(ball_bottom - brick_top) <= COLLISION_TOLERANCE)
                             && abs(ball_center_x - brick_center_x) <= brick_width/2 ){
-                        printf("Collided V\n");
                         ball.vel.y *= -1;
                         vec_splice(&bricks, i, 1);
                     }
 
+                    //left and right
                     if (((abs(ball_right - brick_left) <= COLLISION_TOLERANCE)
                                 || abs(ball_left - brick_right) <= COLLISION_TOLERANCE)
                             && abs(ball_center_y - brick_center_y) <= BRICK_HEIGHT/2){
-                        printf("Collided H\n");
                         ball.vel.x *= -1;
                         vec_splice(&bricks, i, 1);
                     }
@@ -199,12 +199,6 @@ int main(){
 
                 ball.pos.x += ball.vel.x;
                 ball.pos.y += ball.vel.y;
-
-                SDL_RenderPresent(renderer);
-                SDL_UpdateWindowSurface(window);
-
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                SDL_RenderClear(renderer);
 
                 //ball
                 filledCircleRGBA(renderer, ball.pos.x, ball.pos.y, BALL_RADIUS, 255, 255, 255, 255);
@@ -219,6 +213,10 @@ int main(){
                         255,
                         255,
                         255);
+
+                SDL_RenderPresent(renderer);
+                SDL_UpdateWindowSurface(window);
+
 
                 //remaining time goes into time2 but doesn't get used
                 struct timespec time;
