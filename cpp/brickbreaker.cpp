@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <math.h>
+#include <vector>
+#include <unistd.h>
 #include <time.h>
 #include <SDL2/SDL.h>
-#include <stdbool.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
-#include "./deps/vec/vec.h"
 
 const int SCREEN_WIDTH = 800; 
 const int SCREEN_HEIGHT = 600;
@@ -59,12 +59,8 @@ enum Direction{
     None,
 };
 
-typedef vec_t(Point) brick_vec_t; //defines the struct body_vec_t as a vector of bodies
-
 int main(){
     srand(time(NULL));
-
-    int score = 0;
 
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
@@ -77,10 +73,11 @@ int main(){
 
     Ball ball = new_ball(pos, vel);
 
-    brick_vec_t bricks;
-    vec_init(&bricks);
+    using namespace std;
+
+    vector<Point> bricks;
     
-    int brick_total_width = SCREEN_WIDTH - (BRICK_X_OFFSET * 2) - (BRICK_GAP * BRICK_COLS);
+    int brick_total_width = SCREEN_WIDTH - (BRICK_X_OFFSET * 2);
     int brick_width = brick_total_width/BRICK_COLS;
 
     for (int r = 0; r < BRICK_ROWS; r++){
@@ -89,10 +86,9 @@ int main(){
             brick.y = BRICK_Y_OFFSET + ((BRICK_HEIGHT + BRICK_GAP) * r);
             brick.x = BRICK_X_OFFSET + ((brick_width + BRICK_GAP) * c);
             
-            vec_push(&bricks, brick);
+            bricks.push_back(brick);
         }
     }
-
 
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
         printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() ); 
@@ -142,7 +138,7 @@ int main(){
                 else if (ball_bottom >= SCREEN_HEIGHT){
                     SDL_DestroyWindow(window);
                     SDL_Quit();
-                    printf("Game over\n Score: %i", score);
+                    printf("Game over");
                     return 0;
                 }
 
@@ -155,18 +151,15 @@ int main(){
                     switch (paddle_direction){
                         case Left: { ball.vel.x -= PADDLE_SPEED/2; } break;
                         case Right: { ball.vel.x += PADDLE_SPEED/2; } break;
-                        case None: { 
-                                       if (ball.vel.x <= 0) ball.vel.x -= 1; else ball.vel.x += 1; 
-                                       ball.vel.y += 1; 
-                                   }
+                        case None: { ball.vel.x *= .9; ball.vel.y *= 1.1; }
                     }
 
                     ball.vel.y *= -1;
                 }
 
                 //brick collisions and drawing
-                int i; Point brick_pos;
-                vec_foreach(&bricks, brick_pos, i){
+                int i = 0;
+                for(Point brick_pos : bricks){
                     int brick_top = brick_pos.y;
                     int brick_bottom = brick_pos.y + BRICK_HEIGHT;
                     int brick_left = brick_pos.x;
@@ -190,17 +183,8 @@ int main(){
                                 || abs(ball_bottom - brick_top) <= COLLISION_TOLERANCE)
                             && abs(ball_center_x - brick_center_x) <= brick_width/2 ){
                         ball.vel.y *= -1;
-                        vec_splice(&bricks, i, 1);
-
-                        if(bricks.length == 0){
-                            SDL_DestroyWindow(window);
-                            SDL_Quit();
-                            printf("You Win!");
-                            return 0;
-                        }
-
+                        bricks.erase(bricks.begin()+i);
                         SDL_RenderPresent(renderer);
-                        score++;
                     }
 
                     //left and right
@@ -208,10 +192,10 @@ int main(){
                                 || abs(ball_left - brick_right) <= COLLISION_TOLERANCE)
                             && abs(ball_center_y - brick_center_y) <= BRICK_HEIGHT/2){
                         ball.vel.x *= -1;
-                        vec_splice(&bricks, i, 1);
+                        bricks.erase(bricks.begin()+i);
                         SDL_RenderPresent(renderer);
-                        score++;
                     }
+                    i++;
                 }
 
                 ball.pos.x += ball.vel.x;
@@ -237,13 +221,7 @@ int main(){
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
 
-
-                //remaining time goes into time2 but doesn't get used
-                struct timespec time;
-                struct timespec time2;
-                time.tv_sec = 0;
-                time.tv_nsec = 16666670;
-                nanosleep(&time, &time2);
+                usleep(16666);
             }
         }
     }
